@@ -1,0 +1,53 @@
+project:
+  name: "VelocityCV"
+  theme: "classic_arcade"
+
+camera:
+  index: 0
+  width: 640
+  height: 480
+  mirror: true
+  fps: 30
+
+tracking:
+  max_hands: 2                   # Track both hands for dual-hand control
+  preferred_hand: "any"
+  min_detection_confidence: 0.6
+  min_tracking_confidence: 0.6
+
+controls:
+  mode: "dual_hand"              # dual_hand | single_hand | keyboard
+  dual_hand:
+    close_curl_threshold: 1.15   # Tip-to-wrist ratio under which hand is closed
+    steer_speed: 4.5
+    return_speed: 6.0
+  hand_lost:
+    grace_ms: 300
+    pause_after_seconds: 2.0
+    stale_input_ms: 250
+
+camera_panel:
+  mode: "inset"
+  position: "bottom_left"
+  scale: 0.28
+  show_skeleton: true
+  show_readout: true
+  enabled: true
+
+game:
+  resolution: [1280, 720]
+  target_fps: 60
+  max_speed: 280.0               # mph / kmh scale
+  acceleration: 150.0
+  braking: 280.0
+  deceleration: 50.0
+  offroad_deceleration: 190.0
+  centrifugal_force: 0.30
+  nitro:
+    capacity: 100.0
+    drain_rate: 35.0
+    regen_rate: 10.0
+    near_miss_bonus: 25.0
+    speed_boost_factor: 1.30
+    acceleration_boost_factor: 1.6
+  track: "tracks/classic_arcade.json"

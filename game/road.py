@@ -125,15 +125,15 @@ class Track:
             self._build_default_arcade_track()
 
     def _build_default_arcade_track(self) -> None:
-        # Start straight with classic gantry
-        self._add_road_section(60, 0.0, 0.0, "start_gantry")
+        # Authentic 90s Arcade circuit with billboards, palms and pine trees
         self._add_road_section(60, 0.0, 0.0, "billboard")
+        self._add_road_section(50, 0.0, 0.0, "billboard")
         self._add_road_section(70, 1.8, 6.0, "palm_tree")
-        self._add_road_section(80, 2.5, 10.0, "pine_tree")
-        self._add_road_section(60, 0.0, -8.0, "billboard")
+        self._add_road_section(80, 2.6, 8.0, "pine_tree")
+        self._add_road_section(60, 0.0, -6.0, "billboard")
         self._add_road_section(90, -2.4, 4.0, "palm_tree")
         self._add_road_section(70, -1.2, -10.0, "pine_tree")
-        self._add_road_section(80, 0.0, 0.0, "finish_gantry")
+        self._add_road_section(90, -0.8, -2.0, "billboard")
 
     def _add_road_section(
         self,
@@ -155,11 +155,8 @@ class Track:
             p2 = WorldPoint(0.0, ease_y, (seg_idx + 1) * self.segment_length)
 
             scenery_items = []
-            if scenery_type:
-                if scenery_type in ("start_gantry", "finish_gantry") and i == 12:
-                    # Overhead gantry across the road
-                    scenery_items.append(SceneryObject(scenery_type, 0.0, scale_factor=1.3))
-                elif i % 8 == 0:
+            if scenery_type and scenery_type in ("billboard", "palm_tree", "pine_tree"):
+                if i % 8 == 0:
                     side = -1.65 if (i % 16 == 0) else 1.65
                     scenery_items.append(SceneryObject(scenery_type, side))
 

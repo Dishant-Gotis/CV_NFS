@@ -1,7 +1,7 @@
 # VELOCITY // CV
-### Hand-Gesture-Controlled Cyberpunk Arcade Racing Game
+### Dual-Hand Gesture-Controlled 90s Arcade Racing Game
 
-![Theme: Cyberpunk Neon Night + Synthwave](https://img.shields.io/badge/Theme-Cyberpunk%20Synthwave-ff007f?style=for-the-badge)
+![Theme: Classic 90s Arcade](https://img.shields.io/badge/Theme-Classic%2090s%20Arcade-00f0ff?style=for-the-badge)
 ![Python 3.10](https://img.shields.io/badge/Python-3.10.11-00f0ff?style=for-the-badge)
 ![MediaPipe](https://img.shields.io/badge/Vision-MediaPipe%20Hands-ffd700?style=for-the-badge)
 ![Pygame-CE](https://img.shields.io/badge/Engine-Pygame--CE%2060FPS-39ff14?style=for-the-badge)
@@ -10,43 +10,45 @@
 
 ## 1. Overview
 
-**VelocityCV** is a high-octane, OutRun-style pseudo-3D arcade racer set in a neon-drenched synthwave city. The game is controlled **entirely through real-time hand gestures** captured from any standard webcam via computer vision — no physical steering wheel or keyboard required.
+**VelocityCV** is a high-octane, OutRun / Pole Position-style pseudo-3D arcade racer inspired by classic 90s arcade cabinets (Sega OutRun, Super Monaco GP). The game is controlled **entirely through real-time dual-hand gestures** captured from any standard webcam via computer vision — no physical steering wheel or keyboard required.
 
-A real-time optical HUD inset displays your live mirrored video feed with an overlaid 21-point neon hand skeleton and live telemetry readings.
+A real-time optical HUD inset displays your live mirrored video feed (right-side up) with an overlaid 21-point dual-hand skeletal tracker and wrist labels.
 
 ---
 
-## 2. Gesture Controls (Primary Single-Hand Mode)
+## 2. Gesture Controls (Dual-Hand Arcade Scheme)
 
-Hold your hand in front of the camera (~0.4 to 0.8 meters away, palm facing camera):
+Present both hands in front of the camera (~0.4 to 0.8 meters away, palms facing camera):
 
 | Action | Hand Gesture | Mechanics & Detection |
 |---|---|---|
-| **Steer Left / Right** | **Tilt / Roll Hand** ($\pm 30^{\circ}$) | Angle of wrist-to-middle-knuckle vector. Adaptive One-Euro low-pass filter eliminates jitter. |
-| **Accelerate** | **Open Palm** | 4 or more fingers extended outward. Throttle smoothly ramps to full power. |
-| **Brake / Reverse** | **Closed Fist** | Fingers curled tightly into palm. Active high-intensity taillight flare. |
-| **Nitro Boost** | **Pinch** (Thumb + Index) | Touch thumb tip to index fingertip. Activates plasma thrusters, speed lines, and blue-violet exhaust. |
-| **Recalibrate** | Key `R` | Re-zeros the neutral tilt angle and hand scale. |
+| **Steer Left** | **Left Fist Closed** (Right hand open) | Smooth analog steering to the left. |
+| **Steer Right** | **Right Fist Closed** (Left hand open) | Smooth analog steering to the right. |
+| **Brake / Decelerate** | **Both Fists Closed** | Closes both fists simultaneously for strong braking and brake light activation. |
+| **Speed / Throttle Control** | **Palm Openness** (Shrink / Expand) | Continuous speed modulation: Open flat palms = maximum throttle; shrink/curl palms inward = throttle feathering. |
+| **Skip Calibration** | Key `Space` | Press Space at the countdown screen to immediately skip straight to GO! |
+| **Recalibrate** | Key `R` | Re-zeros the neutral hand tracking baselines. |
 | **Toggle Camera Inset** | Key `C` | Shows / hides the optical sensor inset frame. |
-| **Pause** | Key `P` or Hand Left Frame | Automatically pauses if tracking is lost for $>2$ seconds. |
+| **Pause** | Key `P` or Hands Left Frame | Automatically pauses if tracking is lost. |
 
 ### Keyboard Fallback Mode (Debug & Testing)
 * `A` / `←` : Steer Left
 * `D` / `→` : Steer Right
 * `W` / `↑` : Accelerate
 * `S` / `↓` : Brake
-* `Space` : Nitro Boost
+* `Space` : Nitro Boost / Skip Countdown
 * `ESC` / `Q` : Exit
 
 ---
 
-## 3. Visuals & Synthwave Aesthetics
+## 3. Visuals & 90s Arcade Quality
 
-* **Dynamic Road Geometry:** Perspective-projected segment strips with alternating dark obsidian asphalt, glowing neon cyan and pink rumble curbs, and pulsing lane dashes.
-* **Cyberpunk Parallax Skyline:** Multi-layered neon skyscraper silhouettes, animated spires, twinkling stars, and a classic Synthwave grid sun.
-* **Procedural Cyber Supercar:** Detailed wedge-body racer featuring glowing neon cyan underglow, continuous rear LED taillight bar with brake bloom, and dynamic steering lean.
-* **Visual FX:** Warp speed lines at $>180\text{ km/h}$, particle emitters for exhaust flames and nitro plasma trails, and impact screen shake.
-* **AI Traffic & Collisions:** AI traffic cars in lane configurations; near-miss passes award nitro plasma and +500 point bonuses.
+* **Starting Grid & Pack AI:** 6 rival competitors on the starting grid directly in front of the player (staggered pole position) plus 12 field competitors racing dynamically with lane-changing and drafting.
+* **Road Border & Guardrail Collisions:** Impacting the red-and-white rumble curbs or guardrails triggers lateral rebound physics, speed penalty, screen shake, and sparking particle effects.
+* **Detailed Formula / Arcade Racer Model:** Procedural high-fidelity Formula car featuring wide textured slicks with metallic 5-spoke alloy rims, dual-tone aerodynamic sidepods with specular light highlights, cockpit roll hoop, helmet visor reflections, rear wing endplates, and pulsing F1 rain light.
+* **Overhead START Gantry:** 3D lattice gantry spanning the highway with working 3-2-1 red-to-green traffic signals.
+* **Classic 90s Horizon:** Clean multi-tier mountain ridges, cumulus clouds, and azure sky true to classic Sega arcade cabinets.
+* **Clean 90s HUD:** Authentic top-row `TOP`, `SCORE`, `TIME`, `LAP`, and digital gear/tachometer readout.
 
 ---
 
@@ -70,12 +72,19 @@ pip install -r requirements.txt
 
 ## 5. Running the Game
 
-```bash
-# Launch with Hand Gesture Vision tracking (Default):
-python main.py
+You can run the game with 1 click using the launcher scripts, or directly with the virtual environment's Python:
 
-# Launch directly in Keyboard Fallback Mode:
-python main.py --mode keyboard
+```powershell
+# Option 1: 1-Click Launcher (Batch or PowerShell)
+.\run_game.bat
+# or
+.\run_game.ps1
+
+# Option 2: Direct Virtual Environment Python (Default Dual-Hand Vision Tracking)
+.\.venv\Scripts\python.exe main.py
+
+# Option 3: Keyboard Fallback Mode
+.\.venv\Scripts\python.exe main.py --mode keyboard
 ```
 
 ---

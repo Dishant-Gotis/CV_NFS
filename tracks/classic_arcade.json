@@ -6,13 +6,13 @@
   "lanes": 3,
   "road_width": 2400,
   "sections": [
-    { "type": "straight", "length": 60, "curve": 0.0, "elevation": 0.0, "scenery": "start_gantry" },
+    { "type": "straight", "length": 60, "curve": 0.0, "elevation": 0.0, "scenery": "billboard" },
     { "type": "straight", "length": 50, "curve": 0.0, "elevation": 0.0, "scenery": "billboard" },
     { "type": "curve", "length": 70, "curve": 1.8, "elevation": 6.0, "scenery": "palm_tree" },
-    { "type": "curve", "length": 80, "curve": 2.6, "elevation": 10.0, "scenery": "pine_tree" },
-    { "type": "straight", "length": 60, "curve": 0.0, "elevation": -8.0, "scenery": "billboard" },
-    { "type": "curve", "length": 90, "curve": -2.4, "elevation": 5.0, "scenery": "palm_tree" },
-    { "type": "hill", "length": 70, "curve": -1.2, "elevation": -12.0, "scenery": "pine_tree" },
-    { "type": "straight", "length": 80, "curve": 0.0, "elevation": 0.0, "scenery": "finish_gantry" }
+    { "type": "curve", "length": 80, "curve": 2.6, "elevation": 8.0, "scenery": "pine_tree" },
+    { "type": "straight", "length": 60, "curve": 0.0, "elevation": -6.0, "scenery": "billboard" },
+    { "type": "curve", "length": 90, "curve": -2.4, "elevation": 4.0, "scenery": "palm_tree" },
+    { "type": "hill", "length": 70, "curve": -1.2, "elevation": -10.0, "scenery": "pine_tree" },
+    { "type": "straight", "length": 90, "curve": -0.8, "elevation": -2.0, "scenery": "billboard" }
   ]
 }

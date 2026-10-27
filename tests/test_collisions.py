@@ -16,6 +16,7 @@ def collision_env():
     track = Track()
     player = PlayerCar(config=DEFAULT_CONFIG)
     traffic_mgr = TrafficManager(track, max_traffic=0)
+    traffic_mgr.cars.clear()
     col_system = CollisionSystem(invulnerability_seconds=1.5)
     return player, traffic_mgr, col_system
 

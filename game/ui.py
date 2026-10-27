@@ -15,6 +15,7 @@ class GameState(Enum):
     COUNTDOWN = "COUNTDOWN"
     RACING = "RACING"
     PAUSED = "PAUSED"
+    GAME_OVER = "GAME_OVER"
     RESULTS = "RESULTS"
 
 
@@ -95,27 +96,81 @@ class UIManager:
         self.screen.blit(sub, (self.width // 2 - sub.get_width() // 2, 340))
 
     def render_results(self, stats: Dict[str, Any]) -> None:
-        title = self.font_title.render("RACE COMPLETE", True, self.c_yellow)
-        self.screen.blit(title, (self.width // 2 - title.get_width() // 2, 160))
+        title = self.font_title.render("GRAND PRIX FINISH", True, self.c_yellow)
+        self.screen.blit(title, (self.width // 2 - title.get_width() // 2, 110))
 
-        card_w = 480
-        card_h = 220
-        card_x = self.width // 2 - card_w // 2
-        card_y = 250
-        pygame.draw.rect(self.screen, (10, 10, 15), (card_x, card_y, card_w, card_h))
-        pygame.draw.rect(self.screen, self.c_yellow, (card_x, card_y, card_w, card_h), 3)
+        # ── Left Card: Telemetry & Stats ──
+        card_w, card_h = 360, 240
+        card_x = self.width // 2 - card_w - 20
+        card_y = 200
+
+        pygame.draw.rect(self.screen, (12, 12, 18), (card_x, card_y, card_w, card_h), border_radius=6)
+        pygame.draw.rect(self.screen, self.c_yellow, (card_x, card_y, card_w, card_h), 2, border_radius=6)
+
+        hdr = self.font_arcade.render("── RACE TELEMETRY ──", True, self.c_cyan)
+        self.screen.blit(hdr, (card_x + card_w // 2 - hdr.get_width() // 2, card_y + 16))
 
         lines = [
             f"SCORE      : {int(stats.get('score', 0)):05d}",
             f"TOP SPEED  : {int(stats.get('top_speed', 0))} MPH",
             f"DISTANCE   : {int(stats.get('distance', 0))} M",
             f"TIME       : {stats.get('time_elapsed', 0.0):.1f} SEC",
+            f"NEAR MISS  : {int(stats.get('near_misses', 0))}",
         ]
-        cy = card_y + 25
+        cy = card_y + 50
         for line in lines:
-            t = self.font_mid.render(line, True, self.c_white)
-            self.screen.blit(t, (card_x + 60, cy))
-            cy += 45
+            t = self.font_arcade.render(line, True, self.c_white)
+            self.screen.blit(t, (card_x + 35, cy))
+            cy += 34
+
+        # ── Right Card: 4-Car Leaderboard ──
+        lb_w, lb_h = 420, 240
+        lb_x = self.width // 2 + 20
+        lb_y = 200
+
+        pygame.draw.rect(self.screen, (12, 12, 18), (lb_x, lb_y, lb_w, lb_h), border_radius=6)
+        pygame.draw.rect(self.screen, self.c_yellow, (lb_x, lb_y, lb_w, lb_h), 2, border_radius=6)
+
+        lb_hdr = self.font_arcade.render("── FINAL STANDINGS ──", True, self.c_cyan)
+        self.screen.blit(lb_hdr, (lb_x + lb_w // 2 - lb_hdr.get_width() // 2, lb_y + 16))
+
+        leaderboard = stats.get("leaderboard", [])
+        pos_suffixes = ["1st", "2nd", "3rd", "4th"]
+        pos_colors = [(255, 215, 0), (220, 225, 235), (205, 127, 50), (220, 80, 80)]
+
+        row_y = lb_y + 50
+        for idx, entry in enumerate(leaderboard[:4]):
+            p_lbl = pos_suffixes[idx] if idx < 4 else f"{idx+1}th"
+            p_col = pos_colors[idx] if idx < 4 else self.c_white
+
+            # Row background highlight for player
+            is_player = entry.get("is_player", False)
+            if is_player:
+                pygame.draw.rect(self.screen, (30, 45, 80), (lb_x + 10, row_y - 3, lb_w - 20, 32), border_radius=4)
+                pygame.draw.rect(self.screen, self.c_yellow, (lb_x + 10, row_y - 3, lb_w - 20, 32), 1, border_radius=4)
+
+            # Pos badge
+            pos_t = self.font_arcade.render(p_lbl, True, p_col)
+            self.screen.blit(pos_t, (lb_x + 22, row_y + 3))
+
+            # Team color pip
+            c_col = entry.get("color", (200, 200, 200))
+            pygame.draw.rect(self.screen, c_col, (lb_x + 75, row_y + 6, 12, 14), border_radius=2)
+
+            # Name & Number
+            c_name = entry.get("name", "CAR")
+            c_num = entry.get("number", idx + 1)
+            player_tag = " [YOU]" if is_player else ""
+            txt = f"#{c_num} {c_name}{player_tag}"
+            t_surf = self.font_arcade.render(txt, True, (255, 255, 255) if is_player else (200, 200, 210))
+            self.screen.blit(t_surf, (lb_x + 98, row_y + 3))
+
+            # Gap / Speed
+            gap = entry.get("gap_str", "")
+            g_surf = self.font_arcade.render(gap, True, self.c_yellow if is_player else (160, 160, 180))
+            self.screen.blit(g_surf, (lb_x + lb_w - g_surf.get_width() - 25, row_y + 3))
+
+            row_y += 38
 
         restart_txt = self.font_mid.render("PRESS [SPACE] TO RACE AGAIN", True, self.c_cyan)
-        self.screen.blit(restart_txt, (self.width // 2 - restart_txt.get_width() // 2, 520))
+        self.screen.blit(restart_txt, (self.width // 2 - restart_txt.get_width() // 2, 490))

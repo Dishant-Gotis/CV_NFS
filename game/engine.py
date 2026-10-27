@@ -1,7 +1,7 @@
 """
 VelocityCV — Main Game Engine
-Orchestrates the 60 FPS game loop, state machine, arcade physics, traffic AI,
-collision detection, telemetry HUD, and decoupled vision / keyboard input.
+Orchestrates the 60 FPS game loop, state machine, arcade physics, starting grid competitors,
+road border collision (game over), telemetry HUD, and decoupled vision / keyboard input.
 """
 
 import sys
@@ -11,7 +11,7 @@ import pygame
 
 from .car import PlayerCar
 from .collisions import CollisionSystem
-from .renderer import CyberpunkRenderer
+from .renderer import ArcadeRenderer
 from .road import Track
 from .traffic import TrafficManager
 from .ui import GameState, UIManager
@@ -31,16 +31,16 @@ class GameEngine:
         self.target_fps = int(config.get("game", {}).get("target_fps", 60))
 
         pygame.init()
-        pygame.display.set_caption(f"{config.get('project', {}).get('name', 'VelocityCV')} — Cyberpunk Arcade")
+        pygame.display.set_caption(f"{config.get('project', {}).get('name', 'VelocityCV')} — Classic 90s Arcade")
         self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
         self.clock = pygame.time.Clock()
 
         # Core Subsystems
-        track_file = config.get("game", {}).get("track", "tracks/synthwave_city.json")
+        track_file = config.get("game", {}).get("track", "tracks/classic_arcade.json")
         self.track = Track(track_path=track_file)
         self.car = PlayerCar(config=config)
-        self.renderer = CyberpunkRenderer(self.screen, config=config)
-        self.traffic_mgr = TrafficManager(self.track, max_traffic=14)
+        self.renderer = ArcadeRenderer(self.screen, config=config)
+        self.traffic_mgr = TrafficManager(self.track, max_traffic=18)
         self.collision_system = CollisionSystem()
         self.ui = UIManager(self.screen)
         self.keyboard_input = KeyboardInputProvider()
@@ -57,6 +57,7 @@ class GameEngine:
         self.top_speed = 0.0
         self.near_misses = 0
         self.collisions = 0
+        self.border_collisions = 0
         self.hand_lost_duration = 0.0
 
     def run(self) -> None:
@@ -88,9 +89,9 @@ class GameEngine:
 
             # Update Window Title
             fps = self.clock.get_fps()
-            mode_lbl = "Hand CV" if (self.current_state.hand_detected and self.vision_provider) else "Keyboard"
+            mode_lbl = "Dual-Hand CV" if (self.current_state.hand_detected and self.vision_provider) else "Keyboard"
             pygame.display.set_caption(
-                f"VelocityCV — FPS: {fps:.1f} | Speed: {int(self.car.speed)} km/h | Mode: {mode_lbl} | Score: {self.score}"
+                f"VelocityCV — FPS: {fps:.1f} | Speed: {int(self.car.speed)} mph | Mode: {mode_lbl} | Score: {self.score}"
             )
 
         pygame.quit()
@@ -98,17 +99,16 @@ class GameEngine:
     def _update_state(self, dt: float) -> None:
         """State machine tick."""
         if self.state == GameState.MENU:
-            # Check for start trigger
+            self.traffic_mgr.update(self.car.z, dt, is_racing=False)
+
             keys = pygame.key.get_pressed()
             if keys[pygame.K_SPACE] or keys[pygame.K_RETURN] or (self.current_state.throttle > 0.6 and self.current_state.hand_detected):
-                if self.vision_provider and hasattr(self.vision_provider, "trigger_calibration"):
-                    self.vision_provider.trigger_calibration()
-                    self.state = GameState.CALIBRATION
-                else:
-                    self.countdown_timer = 3.5
-                    self.state = GameState.COUNTDOWN
+                self.countdown_timer = 3.5
+                self.state = GameState.COUNTDOWN
 
         elif self.state == GameState.CALIBRATION:
+            self.traffic_mgr.update(self.car.z, dt, is_racing=False)
+
             keys = pygame.key.get_pressed()
             if keys[pygame.K_SPACE] or keys[pygame.K_RETURN]:
                 self.countdown_timer = 3.5
@@ -125,14 +125,16 @@ class GameEngine:
                 self.state = GameState.COUNTDOWN
 
         elif self.state == GameState.COUNTDOWN:
+            self.traffic_mgr.update(self.car.z, dt, is_racing=False)
             self.countdown_timer -= dt
             if self.countdown_timer <= 0:
                 self.state = GameState.RACING
 
         elif self.state == GameState.RACING:
             self.race_time += dt
+            self.car.race_time = self.race_time
 
-            # Hand lost safety pause (Section 5.5 / Section 8)
+            # Hand lost safety pause
             if self.vision_provider and not self.current_state.hand_detected:
                 self.hand_lost_duration += dt
                 if self.hand_lost_duration >= 2.0:
@@ -152,10 +154,16 @@ class GameEngine:
                 dt=dt,
             )
 
-            # Traffic Step
-            self.traffic_mgr.update(self.car.z, dt)
+            # Check for GAME OVER (border collision)
+            if self.car.game_over:
+                self.border_collisions += 1
+                self.state = GameState.GAME_OVER
+                return
 
-            # Collision & Near-Miss Detection
+            # AI Competitors
+            self.traffic_mgr.update(self.car.z, dt, is_racing=True)
+
+            # Vehicle Collisions & Near-Misses
             hit, near_miss = self.collision_system.update(self.car, self.traffic_mgr, dt)
             if hit:
                 self.collisions += 1
@@ -164,16 +172,28 @@ class GameEngine:
                 self.near_misses += 1
                 self.score += 500
 
-            # Score & Speed Telemetry
+            # Telemetry
             if self.car.speed > self.top_speed:
                 self.top_speed = self.car.speed
 
-            # Distance points (proportional to speed)
             self.score += int(self.car.speed * 0.15 * dt)
 
-            # Finish lap check (e.g. after 90 seconds or completed distance)
-            if self.race_time >= 90.0:
+            # Time limit
+            if self.race_time >= 75.0:
                 self.state = GameState.RESULTS
+
+        elif self.state == GameState.GAME_OVER:
+            # Let crash animation play, wait for restart
+            self.car.update(
+                steering_input=0, throttle_input=0, brake_input=1.0,
+                nitro_requested=False, current_curve=0, track_total_length=self.track.total_length,
+                dt=dt,
+            )
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_SPACE] or keys[pygame.K_RETURN]:
+                self._reset_race()
+                self.countdown_timer = 3.5
+                self.state = GameState.COUNTDOWN
 
         elif self.state == GameState.PAUSED:
             keys = pygame.key.get_pressed()
@@ -188,14 +208,15 @@ class GameEngine:
                 self.state = GameState.COUNTDOWN
 
     def _reset_race(self) -> None:
-        """Resets car and telemetry for a new race."""
+        """Resets car and starting grid for a new race."""
         self.car = PlayerCar(config=self.config)
-        self.traffic_mgr = TrafficManager(self.track, max_traffic=14)
+        self.traffic_mgr.reset_starting_grid()
         self.score = 0
         self.race_time = 0.0
         self.top_speed = 0.0
         self.near_misses = 0
         self.collisions = 0
+        self.border_collisions = 0
         self.hand_lost_duration = 0.0
 
     def _render_current_state(self, dt: float) -> None:
@@ -204,7 +225,7 @@ class GameEngine:
         if self.vision_provider and hasattr(self.vision_provider, "get_annotated_frame"):
             camera_surf = self.vision_provider.get_annotated_frame()
 
-        # Render 3D World (Road, Parallax, Car, Traffic, HUD)
+        # Render 3D World
         self.renderer.render(
             car=self.car,
             track=self.track,
@@ -212,9 +233,11 @@ class GameEngine:
             dt=dt,
             camera_frame_surf=camera_surf,
             traffic_mgr=self.traffic_mgr,
+            game_state=self.state.value,
+            countdown_timer=self.countdown_timer,
         )
 
-        # Render State UI Overlays
+        # UI Overlays
         if self.state == GameState.MENU:
             self.ui.render_menu()
         elif self.state == GameState.CALIBRATION:
@@ -226,6 +249,8 @@ class GameEngine:
             self.ui.render_countdown(self.countdown_timer)
         elif self.state == GameState.PAUSED:
             self.ui.render_paused()
+        elif self.state == GameState.GAME_OVER:
+            pass  # Handled by renderer's crash overlay
         elif self.state == GameState.RESULTS:
             self.ui.render_results({
                 "score": self.score,
@@ -233,6 +258,7 @@ class GameEngine:
                 "distance": int(self.car.z),
                 "near_misses": self.near_misses,
                 "time_elapsed": self.race_time,
+                "leaderboard": self.traffic_mgr.get_leaderboard(self.car),
             })
 
     def _handle_events(self) -> None:
@@ -250,7 +276,6 @@ class GameEngine:
                     elif self.state == GameState.PAUSED:
                         self.state = GameState.RACING
                 elif event.key == pygame.K_r:
-                    # Quick recalibration trigger
                     if self.vision_provider and hasattr(self.vision_provider, "trigger_calibration"):
                         self.vision_provider.trigger_calibration()
 
